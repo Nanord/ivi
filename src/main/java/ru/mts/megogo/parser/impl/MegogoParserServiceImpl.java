@@ -24,7 +24,7 @@ public class MegogoParserServiceImpl implements MegogoParserService {
             return null;
         }
         Element mainElement = receiveMainElement(document);
-        if(Objects.nonNull(mainElement)) {
+        if(Objects.isNull(mainElement)) {
             return null;
         }
         String id = mainElement.attr("data-obj-id");
