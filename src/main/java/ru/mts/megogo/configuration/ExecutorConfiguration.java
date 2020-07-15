@@ -51,11 +51,9 @@ public class ExecutorConfiguration {
         if(size == null || size < 1) {
             log.info("incorrect properties \"thread.pool.size\" fir {}: {}", prefix, size);
             threadPoolTaskExecutor.setCorePoolSize(1);
-            threadPoolTaskExecutor.setMaxPoolSize(1);
             return threadPoolTaskExecutor;
         }
         threadPoolTaskExecutor.setCorePoolSize(size);
-        threadPoolTaskExecutor.setMaxPoolSize(size);
         return threadPoolTaskExecutor;
     }
 
