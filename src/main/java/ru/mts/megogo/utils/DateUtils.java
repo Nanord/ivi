@@ -3,27 +3,10 @@ package ru.mts.megogo.utils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 @Slf4j
 public class DateUtils {
-
-    public static String receiveDateForOutputJson() {
-        return LocalDate
-                .now()
-                .atStartOfDay(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
-
-    public static String receiveDateForAvito() {
-        return LocalDate
-                .now()
-                .atStartOfDay(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-    }
 
     public static void printExecutionTime(long start) {
         long end = System.currentTimeMillis() - start;
@@ -33,12 +16,6 @@ public class DateUtils {
         long hour = (end / (1000 * 60 * 60)) % 24;
         String time = String.format("%02d:%02d:%02d.%d", hour, minute, second, millis);
         log.info("Execution time: {}", time);
-    }
-
-    public static String getCurrentTimeForFileName() {
-        Date date = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("YYYYMMdd");
-        return dateFormat.format(date);
     }
 
     public static String getCurrentTimeForFolderName() {

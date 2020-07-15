@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import ru.mts.megogo.exception.RetryException;
 import ru.mts.megogo.retrying.RetryCount;
@@ -15,9 +14,6 @@ import java.util.Objects;
 @Component
 @ConditionalOnProperty(value = "webdriver.browser.name", havingValue = "firefox", matchIfMissing = true)
 public class FirefoxWebDriver extends WebDriverWrapper {
-
-    //@Value("${proxy}")
-    protected String proxyStr;
 
     @Override
     public FirefoxDriver getWebDriver() {

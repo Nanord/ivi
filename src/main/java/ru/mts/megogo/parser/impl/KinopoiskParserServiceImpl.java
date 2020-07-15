@@ -36,9 +36,6 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
 
     @Override
     public Film parse(Film film) {
-//        if(film != null) {
-//            return film;
-//        }
         if(film == null || StringUtils.isEmpty(film.getKinopoiskUrl())) {
             return film;
         }
@@ -53,51 +50,11 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
         String ratingKP = document.getElementsByClass("rating_ball").text();
         String ratingIMDb = receiveRatingIMDb(document);
         List<String> actorList = receiveActorList(document.getElementById("actorList"));
-        CompletableFuture<List<String>> studioListFuture = receiveStudioList(document
-                .baseUri()
-                .replace("/old", "/studio"));
-        CompletableFuture<List<String>> awardListFuture = receiveAwardList(document
-                .baseUri()
-                .replace("/old", "/awards"));
-        Optional.ofNullable(document.getElementById("infoTable"))
-                .map(infoElement -> infoElement.getElementsByTag("tr"))
-                .ifPresent(rows -> rows.stream()
-                        .map(row -> row.getElementsByTag("td"))
-                        .filter(column -> column.size() == 2)
-                        .forEach(column -> {
-                            String key = StringUtils.trim(column.get(0).text());
-                            String value = StringUtils.trim(column.get(1).text());
-                            if(StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
-                                return;
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "год")) {
-                                film.setYear(value);
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "страна")) {
-                                film.setCountry(value);
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "режиссер")) {
-                                film.setDirector(value);
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "сборы в мире")) {
-                                film.setFeesInWorld(receiveFee(value));
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "сборы в России")) {
-                                film.setFeesInRussia(receiveFee(value));
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "премьера (РФ)")) {
-                                film.setReleaseDateInRussia(receiveReleaseData(value));
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "премьера (мир)")) {
-                                film.setReleaseDateInWorld(receiveReleaseData(value));
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "релиз на DVD") || StringUtils.equalsIgnoreCase(key, "цифровой релиз")) {
-                                film.setReleaseDataInDigital(receiveReleaseData(value));
-                            }
-                            if(StringUtils.equalsIgnoreCase(key, "жанр")) {
-                                film.setGenreList(receiveGenre(value));
-                            }
-                        }));
+        CompletableFuture<List<String>> studioListFuture = receiveStudioList(
+                document.baseUri().replace("/old", "/studio"));
+        CompletableFuture<List<String>> awardListFuture = receiveAwardList(
+                document.baseUri().replace("/old", "/awards"));
+        receiveDataFromTable(document, film);
         Film res = film
                 .setNameRus(nameRus)
                 .setNameOrigin(nameOrigin)
@@ -108,6 +65,56 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .setAwards(MultithreadingUtils.getObjectFromAsynkTask(awardListFuture));
         log.info("Parse Kinopoisk {}", film.getKinopoiskUrl());
         return res;
+    }
+
+    private void receiveDataFromTable(Document document, Film film) {
+        Optional<Elements> optionalRows = Optional.ofNullable(document.getElementById("infoTable"))
+                .map(infoElement -> infoElement.getElementsByTag("tr"));
+        if(!optionalRows.isPresent()) {
+            return;
+        }
+        optionalRows.get()
+                .stream()
+                .map(row -> row.getElementsByTag("td"))
+                .filter(column -> column.size() == 2)
+                .forEach(column -> {
+                    String key = StringUtils.trim(column.get(0).text());
+                    String value = StringUtils.trim(column.get(1).text());
+                    putDataFromColumn(key, value, film);
+                });
+    }
+
+    private void putDataFromColumn(String key, String value, Film film) {
+        if(StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
+            return;
+        }
+        if(StringUtils.equalsIgnoreCase(key, "год")) {
+            film.setYear(value);
+        }
+        if(StringUtils.equalsIgnoreCase(key, "страна")) {
+            film.setCountry(value);
+        }
+        if(StringUtils.equalsIgnoreCase(key, "режиссер")) {
+            film.setDirector(value);
+        }
+        if(StringUtils.equalsIgnoreCase(key, "сборы в мире")) {
+            film.setFeesInWorld(receiveFee(value));
+        }
+        if(StringUtils.equalsIgnoreCase(key, "сборы в России")) {
+            film.setFeesInRussia(receiveFee(value));
+        }
+        if(StringUtils.equalsIgnoreCase(key, "премьера (РФ)")) {
+            film.setReleaseDateInRussia(receiveReleaseData(value));
+        }
+        if(StringUtils.equalsIgnoreCase(key, "премьера (мир)")) {
+            film.setReleaseDateInWorld(receiveReleaseData(value));
+        }
+        if(StringUtils.equalsIgnoreCase(key, "релиз на DVD") || StringUtils.equalsIgnoreCase(key, "цифровой релиз")) {
+            film.setReleaseDataInDigital(receiveReleaseData(value));
+        }
+        if(StringUtils.equalsIgnoreCase(key, "жанр")) {
+            film.setGenreList(receiveGenre(value));
+        }
     }
 
     private List<String> receiveActorList(Element actorElement) {

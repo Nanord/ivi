@@ -5,7 +5,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,14 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import ru.mts.megogo.capcharesolver.CaptchaResolver;
-import ru.mts.megogo.exception.GetPageException;
 import ru.mts.megogo.retrying.RetryStrategy;
 import ru.mts.megogo.service.PageService;
 import ru.mts.megogo.utils.MultithreadingUtils;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -96,11 +93,7 @@ public class PageServiceImpl implements PageService {
             log.info("Url is empty for: {}", logText);
             return null;
         }
-        try {
-            Thread.sleep(timeOutBeforeGetPage);
-        } catch (InterruptedException e) {
-            log.error("Ex", e);
-        }
+        MultithreadingUtils.sleep(timeOutBeforeGetPage);
         driver.get(url);
         Document document = Optional.ofNullable(driver.getPageSource())
                 .map(Jsoup::parse)

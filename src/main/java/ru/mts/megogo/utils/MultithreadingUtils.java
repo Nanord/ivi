@@ -1,7 +1,6 @@
 package ru.mts.megogo.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,14 +33,6 @@ public class MultithreadingUtils {
             log.warn("Queue is full! Not insert element: {}", object, e);
         }
         return false;
-    }
-
-    public static <T> T takeObjectFromQueue(BlockingQueue<T> blockingQueue) {
-        try {
-            return blockingQueue.poll(10, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            return null;
-        }
     }
 
     public static <T> T takeObjectFromQueue(BlockingQueue<T> blockingQueue, T defaultValue) {

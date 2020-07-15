@@ -6,18 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Configuration
 @Slf4j
 public class ExecutorConfiguration {
-
-    @Value("${thread.pool.size.catalog}")
-    private Integer threadPoolSizeCatalog;
 
     @Value("${thread.pool.size.parser}")
     private Integer threadPoolSizeParser;
@@ -32,7 +26,7 @@ public class ExecutorConfiguration {
 
     @Bean
     public ThreadPoolTaskExecutor threadPoolTaskExecutorForCatalog() {
-        return createExecutor("Catalog-", threadPoolSizeCatalog);
+        return createExecutor("Catalog-", 1);
     }
 
     @Bean

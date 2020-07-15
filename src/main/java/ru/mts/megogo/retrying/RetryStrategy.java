@@ -13,8 +13,6 @@ import java.util.function.Predicate;
 
 /**
  * Класс предназначен для подготовки стратигии перезапуска функции.
- *
- * @author Alexandr Borisov
  */
 @Slf4j
 public class RetryStrategy<T> {

@@ -9,12 +9,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import ru.mts.megogo.exception.ProcessingException;
 import ru.mts.megogo.parser.ParserService;
 import ru.mts.megogo.pojo.Film;
 import ru.mts.megogo.service.SaveFile;
 import ru.mts.megogo.utils.DateUtils;
-import ru.mts.megogo.utils.MultithreadingUtils;
 
 import javax.annotation.PostConstruct;
 import javax.naming.ConfigurationException;
@@ -23,8 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static ru.mts.megogo.utils.Constants.LINE_SEPARATOR;
 

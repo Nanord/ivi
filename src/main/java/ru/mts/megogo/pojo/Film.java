@@ -1,6 +1,5 @@
 package ru.mts.megogo.pojo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,9 +37,7 @@ public class Film {
     private String purchasePrice;
     private Boolean subscriptionAvailability = false;
     private String url;
-
-    @JsonIgnore
-    String kinopoiskUrl;
+    private String kinopoiskUrl;
 
     public String toCSV() {
         StringBuilder stringBuilder = new StringBuilder();

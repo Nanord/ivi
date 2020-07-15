@@ -2,8 +2,6 @@ package ru.mts.megogo.retrying;
 
 /**
  * Класс предназначен для управления кол-вом попыток перезапуска фукции
- *
- * @author Alexandr Borisov
  */
 public class RetryCount {
     private Integer COUNT_RETRIES;

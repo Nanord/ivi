@@ -7,26 +7,17 @@ package ru.mts.megogo.capcharesolver.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import ru.mts.megogo.capcharesolver.CaptchaResolver;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
-import java.util.UUID;
-import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 @Slf4j
@@ -41,8 +32,7 @@ public class YandexCaptchaResolverRuCaptcha implements CaptchaResolver {
        String retPath = getValueForName("retpath", formElement);
        
        
-       Element captchaImageElement = formElement.getElementsByTag("img")
-                                                    .first();
+       Element captchaImageElement = formElement.getElementsByTag("img").first();
        
        if(captchaImageElement != null) {
            String captchaValue = getValueFromImage(captchaImageElement);
@@ -55,7 +45,7 @@ public class YandexCaptchaResolverRuCaptcha implements CaptchaResolver {
            }
        }
        
-       return "";
+       return StringUtils.EMPTY;
     }
     
     private Element getFormElement(Document doc) {
@@ -80,51 +70,21 @@ public class YandexCaptchaResolverRuCaptcha implements CaptchaResolver {
     
     private String getValueFromImage(Element imageElement) {
         String imageUrl = imageElement.attr("src");
-        String imgFilename = "";
-        try {
-            imgFilename = loadImage(imageUrl);
-        } catch (IOException ex) {
-            log.error("Error loading image {}: {}", imageUrl, ex.getLocalizedMessage());
-        }
-        
-        if(imgFilename.isEmpty()) {
-            return StringUtils.EMPTY;
-        }
+        printImageUrl(imageUrl);
         Scanner in = new Scanner(System.in);
         log.info("ENTER CPATCHA: ");
         String captchaValue = in.nextLine();
         log.info("Captcha answer is {}", captchaValue);
-
-        new File(imgFilename).delete();
-
         return captchaValue;
     }
     
-    private String loadImage(String imageUrl) throws IOException {
-        
+    private void printImageUrl(String imageUrl) {
         String params = imageUrl.substring(imageUrl.indexOf("?") + 1);
-        
         params = params.substring(0,params.indexOf(","));
-        
-        log.info("Params are {}",params);
-        
-        
         byte[] decoded = Base64.getUrlDecoder().decode(params);
-        log.info("Decoded length - {}", decoded.length);
-        String connectingUrl =new String( decoded);
+        String connectingUrl = new String(decoded);
         
-        log.info("Loading image {}", connectingUrl);
-        
-        Connection.Response resp = Jsoup.connect(connectingUrl).ignoreContentType(true).execute();
-        
-        String filename = "image" + UUID.randomUUID().hashCode() + ".jpg";
-        
-        FileOutputStream fileStream = new FileOutputStream(new File(filename));
-        
-        fileStream.write(resp.bodyAsBytes());
-        
-        return filename;
-        
+        log.info("Captcha image URL {}", connectingUrl);
     }
     
     @Override

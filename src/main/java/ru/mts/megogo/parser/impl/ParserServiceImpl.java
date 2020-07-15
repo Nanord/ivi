@@ -58,21 +58,8 @@ public class ParserServiceImpl implements ParserService {
         List<CompletableFuture<Void>> result = new LinkedList<>();
         String url = MultithreadingUtils.takeObjectFromQueue(filmItemUrlQueue, Constants.DEFAULT_VALUE);
         while (!StringUtils.equals(url, Constants.DEFAULT_VALUE)) {
-            String finalUrl = url;
-            CompletableFuture<Void> futureFilm = pageService.getPage(url, "Megogo film page")
-                    .thenApplyAsync(megogoParserService::parse, threadPoolTaskExecutorForParser)
-                    .exceptionally(ex -> MultithreadingUtils.handleException("Exception during parse Megogo film page",
-                            finalUrl,
-                            null,
-                            ex))
-                    .thenApplyAsync(kinopoiskParserService::parse, threadPoolTaskExecutorForParser)
-                    .exceptionally(ex -> MultithreadingUtils.handleException("Exception during parse Kinopoisk film page",
-                            finalUrl,
-                            null,
-                            ex))
-                    .thenAcceptAsync(saveFile::save, threadPoolTaskExecutorForWriteFile);
-            result.add(futureFilm);
-            url = MultithreadingUtils.takeObjectFromQueue(filmItemUrlQueue, Constants.DEFAULT_VALUE);
+            result.add(doWork(url));
+            url = takeNextTask();
         }
         return result;
     }

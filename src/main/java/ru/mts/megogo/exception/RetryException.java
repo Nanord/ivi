@@ -4,16 +4,9 @@ package ru.mts.megogo.exception;
 import ru.mts.megogo.retrying.RetryCount;
 
 public class RetryException extends RuntimeException {
+
     public RetryException(String message, RetryCount retryCount, Throwable noCheckedException) {
         super(createMessage(message, retryCount), noCheckedException);
-    }
-
-    public RetryException(String message, RetryCount retryCount) {
-        super(createMessage(message, retryCount));
-    }
-
-    public RetryException(Throwable noCheckedException, RetryCount retryCount) {
-        super(createMessage(null, retryCount), noCheckedException);
     }
 
     private static String createMessage(String message, RetryCount retryCount) {
