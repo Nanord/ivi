@@ -17,7 +17,6 @@ import static ru.mts.megogo.utils.Constants.LINE_SEPARATOR;
 @Accessors(chain = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Film {
-
     private String id;
     private String nameRus;
     private String nameOrigin;
@@ -40,5 +39,4 @@ public class Film {
     private Boolean subscriptionAvailability = false;
     private String url;
     private String kinopoiskUrl;
-
 }
