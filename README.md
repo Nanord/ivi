@@ -4,7 +4,7 @@
 
 * Java version 1.8
 * Maven3
-* Браузур firefox: _sudo apt install firefox_
+* Браузер firefox: _sudo apt install firefox_
 * Веб-драйвер для firefox: https://github.com/mozilla/geckodriver/releases
 
 ### Описание параметров в файле application.properties:
@@ -26,7 +26,7 @@ timeout.before.get.page.kinopoisk - таймаут перед получение
 webdriver.gecko.driver - Путь до binary webdriver
 
 ### Запуск
-* Установить зависимости и собрать jar: _mcn clean install_
+* Установить зависимости и собрать jar: _mvn clean install_
 * Запустить полученный jar файл: java -jar megogo-1.0-SNAPSHOT.jar
 
 ### Принцип работы
