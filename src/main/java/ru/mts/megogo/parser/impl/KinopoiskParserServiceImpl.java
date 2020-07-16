@@ -7,8 +7,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import ru.mts.megogo.parser.KinopoiskParserService;
 import ru.mts.megogo.pojo.Film;
@@ -21,7 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,9 +27,6 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
 
     @Autowired
     private PageService pageService;
-    @Autowired
-    @Qualifier("threadPoolTaskExecutorForParser")
-    private ThreadPoolTaskExecutor threadPoolTaskExecutorForParser;
 
     @Override
     public Film parse(Film film) {
@@ -50,9 +44,9 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
         String ratingKP = document.getElementsByClass("rating_ball").text();
         String ratingIMDb = receiveRatingIMDb(document);
         List<String> actorList = receiveActorList(document.getElementById("actorList"));
-        CompletableFuture<List<String>> studioListFuture = receiveStudioList(
+        List<String> studioList = receiveStudioList(
                 document.baseUri().replace("/old", "/studio"));
-        CompletableFuture<List<String>> awardListFuture = receiveAwardList(
+        List<String> awardList = receiveAwardList(
                 document.baseUri().replace("/old", "/awards"));
         receiveDataFromTable(document, film);
         Film res = film
@@ -60,9 +54,9 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .setNameOrigin(nameOrigin)
                 .setRatingIMDB(ratingIMDb)
                 .setRatingKinopoisk(ratingKP)
-                .setActors(actorList)
-                .setStudioList(MultithreadingUtils.getObjectFromAsynkTask(studioListFuture))
-                .setAwards(MultithreadingUtils.getObjectFromAsynkTask(awardListFuture));
+                .setActorList(actorList)
+                .setStudioList(studioList)
+                .setAwardList(awardList);
         log.info("Parse Kinopoisk {}", film.getKinopoiskUrl());
         return res;
     }
@@ -133,52 +127,50 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .orElse(Collections.emptyList());
     }
 
-    private CompletableFuture<List<String>> receiveStudioList(String url) {
-        return pageService.getPage(url, "Kinopoisk studio page")
-                .thenApplyAsync(
-                        page -> Optional.ofNullable(page)
-                            .map(document -> document.getElementsContainingText("Производство:"))
-                            .filter(CollectionUtils::isNotEmpty)
-                            .map(elements -> {
-                                Collections.reverse(elements);
-                                return elements;
-                            })
-                            .flatMap(elements -> elements.stream()
-                                    .filter(el -> StringUtils.equals(el.tagName(), "tbody"))
-                                    .findFirst())
-                            .map(tbody -> tbody.getElementsByTag("tr"))
-                            .map(rows -> rows.stream()
-                                    .map(row -> row.getElementsByTag("td"))
-                                    .filter(column -> column.size() == 2)
-                                    .map(column -> column.get(1))
-                                    .map(Element::text)
-                                    .map(StringUtils::trim)
-                                    .filter(StringUtils::isNotEmpty)
-                                    .collect(Collectors.toList()))
-                            .orElse(Collections.emptyList()),
-                        threadPoolTaskExecutorForParser);
+    private List<String> receiveStudioList(String url) {
+        Document page = MultithreadingUtils
+                .getObjectFromAsynkTask(pageService.getPage(url, "Kinopoisk studio page"));
+        return Optional.ofNullable(page)
+                .map(document -> document.getElementsContainingText("Производство:"))
+                .filter(CollectionUtils::isNotEmpty)
+                .map(elements -> {
+                    Collections.reverse(elements);
+                    return elements;
+                })
+                .flatMap(elements -> elements.stream()
+                        .filter(el -> StringUtils.equals(el.tagName(), "tbody"))
+                        .findFirst())
+                .map(tbody -> tbody.getElementsByTag("tr"))
+                .map(rows -> rows.stream()
+                        .map(row -> row.getElementsByTag("td"))
+                        .filter(column -> column.size() == 2)
+                        .map(column -> column.get(1))
+                        .map(Element::text)
+                        .map(StringUtils::trim)
+                        .filter(StringUtils::isNotEmpty)
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
     }
 
-    private CompletableFuture<List<String>> receiveAwardList(String url) {
-        return pageService.getPage(url, "Kinopoisk studio page")
-                .thenApplyAsync(
-                        page -> Optional.ofNullable(page)
-                                .map(document -> document.getElementsByClass("js-rum-hero"))
-                                .filter(CollectionUtils::isNotEmpty)
-                                .map(Elements::first)
-                                .map(mainTable -> mainTable.getElementsByTag("table"))
-                                .map(tables -> tables.stream()
-                                        .filter(table -> StringUtils.equals(table.attr("cellpadding"), "0"))
-                                        .map(table -> table.getElementsByTag("tr"))
-                                        .filter(CollectionUtils::isNotEmpty)
-                                        .map(Elements::first)
-                                        .map(Element::text)
-                                        .map(StringUtils::trim)
-                                        .filter(StringUtils::isNotEmpty)
-                                        .filter(award -> StringUtils.containsIgnoreCase(award, "cмотрите также"))
-                                        .collect(Collectors.toList()))
-                                .orElse(Collections.emptyList()),
-                        threadPoolTaskExecutorForParser);
+    private List<String> receiveAwardList(String url) {
+        Document page = MultithreadingUtils
+                .getObjectFromAsynkTask(pageService.getPage(url, "Kinopoisk awards page"));
+        return Optional.ofNullable(page)
+                .map(document -> document.getElementsByClass("js-rum-hero"))
+                .filter(CollectionUtils::isNotEmpty)
+                .map(Elements::first)
+                .map(mainTable -> mainTable.getElementsByTag("table"))
+                .map(tables -> tables.stream()
+                        .filter(table -> StringUtils.equals(table.attr("cellpadding"), "0"))
+                        .map(table -> table.getElementsByTag("tr"))
+                        .filter(CollectionUtils::isNotEmpty)
+                        .map(Elements::first)
+                        .map(Element::text)
+                        .map(StringUtils::trim)
+                        .filter(StringUtils::isNotEmpty)
+                        .filter(award -> StringUtils.containsIgnoreCase(award, "cмотрите также"))
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
     }
 
     private String receiveFee(String fee) {

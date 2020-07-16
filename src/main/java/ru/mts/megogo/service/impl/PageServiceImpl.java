@@ -69,8 +69,7 @@ public class PageServiceImpl implements PageService {
             log.info("Url is empty for: {}", logText);
             return null;
         }
-        log.info("Get page for {}: {} ", logText, url);
-        return RetryStrategy.<Document>newRetryStrategy(10)
+        Document res = RetryStrategy.<Document>newRetryStrategy(10)
                 .retryIfException(IOException.class)
                 .retryIfException(SocketTimeoutException.class)
                 .setTimeOutAfterFailCallFunction(5000)
@@ -86,6 +85,8 @@ public class PageServiceImpl implements PageService {
                         .execute()
                         .parse())
                 .run();
+        log.info("Get page for {}: {} ", logText, url);
+        return res;
     }
 
     private Document connectSelenium(String url, String logText, Integer timeOutBeforeGetPage) {
@@ -98,6 +99,7 @@ public class PageServiceImpl implements PageService {
         Document document = Optional.ofNullable(driver.getPageSource())
                 .map(Jsoup::parse)
                 .orElse(null);
+        log.info("Get page for {}: {} ", logText, url);
         if(document == null) {
             log.error("Cannot get page {}", url);
         }
