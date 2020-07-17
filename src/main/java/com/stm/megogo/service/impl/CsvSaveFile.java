@@ -30,7 +30,7 @@ import java.util.List;
 public class CsvSaveFile implements SaveFile {
 
     private static final String OUT_FOLDER = "parsed";
-    private static final String FILE_NAME = "mongogo.csv";
+    private static final String FILE_NAME = "megogo.csv";
 
     @Value("${output.path}")
     private String outputPathProperty;
