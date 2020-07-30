@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import com.stm.megogo.parser.KinopoiskParserService;
-import com.stm.megogo.parser.MegogoParserService;
 import com.stm.megogo.service.PageService;
 import com.stm.megogo.utils.MultithreadingUtils;
 
@@ -28,8 +27,6 @@ public class ParserServiceImpl implements ParserService {
     private PageService pageService;
     @Autowired
     private BlockingQueue<String> filmItemUrlQueue;
-    @Autowired
-    private MegogoParserService megogoParserService;
     @Autowired
     private KinopoiskParserService kinopoiskParserService;
     @Autowired
@@ -54,9 +51,8 @@ public class ParserServiceImpl implements ParserService {
     }
 
     private void doWork(String url) {
-        Optional.ofNullable(MultithreadingUtils.getObjectFromAsynkTask(pageService.getPage(url, "Megogo film page")))
-                .map(document -> megogoParserService.parse(document))
-                .map(film -> kinopoiskParserService.parse(film))
+        Optional.ofNullable(MultithreadingUtils.getObjectFromAsynkTask(pageService.getPage(url, "Kinopoisk film page")))
+               .map(document -> kinopoiskParserService.parse(document))
                 .ifPresent(film -> saveFile.save(film));
     }
 

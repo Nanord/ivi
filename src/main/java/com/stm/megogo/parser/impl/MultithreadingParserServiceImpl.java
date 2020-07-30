@@ -11,7 +11,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 import com.stm.megogo.parser.KinopoiskParserService;
-import com.stm.megogo.parser.MegogoParserService;
 import com.stm.megogo.service.PageService;
 import com.stm.megogo.service.SaveFile;
 import com.stm.megogo.utils.MultithreadingUtils;
@@ -39,8 +38,6 @@ public class MultithreadingParserServiceImpl implements ParserService {
     private PageService pageService;
     @Autowired
     private BlockingQueue<String> filmItemUrlQueue;
-    @Autowired
-    private MegogoParserService megogoParserService;
     @Autowired
     private KinopoiskParserService kinopoiskParserService;
     @Autowired
@@ -71,13 +68,8 @@ public class MultithreadingParserServiceImpl implements ParserService {
     }
 
     private CompletableFuture<Void> doWork(String url) {
-        return pageService.getPage(url, "Megogo film page")
-                .thenApplyAsync(megogoParserService::parse, threadPoolTaskExecutorForParser)
-                .exceptionally(ex -> MultithreadingUtils.handleException("Exception during parse Megogo film page",
-                        url,
-                        null,
-                        ex))
-                .thenApplyAsync(kinopoiskParserService::parse, threadPoolTaskExecutorForParser)
+        return pageService.getPage(url, "Kinopoisk film page")
+                 .thenApplyAsync(kinopoiskParserService::parse, threadPoolTaskExecutorForParser)
                 .exceptionally(ex -> MultithreadingUtils.handleException("Exception during parse Kinopoisk film page",
                         url,
                         null,

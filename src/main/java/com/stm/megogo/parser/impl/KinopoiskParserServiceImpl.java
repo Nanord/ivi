@@ -29,16 +29,11 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
     private PageService pageService;
 
     @Override
-    public Film parse(Film film) {
-        if(film == null || StringUtils.isEmpty(film.getKinopoiskUrl())) {
-            return film;
-        }
-        Document document = MultithreadingUtils
-                .getObjectFromAsynkTask(pageService
-                        .getPage(film.getKinopoiskUrl() + "/old", "Kinopoisk film page"));
+    public Film parse(Document document) {
         if (document == null) {
             return null;
         }
+        Film film = new Film();
         String nameRus = document.getElementsByClass("moviename-title-wrapper").text();
         String nameOrigin = document.getElementsByClass("alternativeHeadline").text();
         String ratingKP = document.getElementsByClass("rating_ball").text();
