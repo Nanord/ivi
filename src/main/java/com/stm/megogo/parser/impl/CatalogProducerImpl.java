@@ -1,6 +1,9 @@
 package com.stm.megogo.parser.impl;
 
 import com.stm.megogo.parser.CatologProducer;
+import com.stm.megogo.service.PageService;
+import com.stm.megogo.utils.Constants;
+import com.stm.megogo.utils.MultithreadingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
@@ -9,11 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import com.stm.megogo.service.PageService;
-import com.stm.megogo.utils.Constants;
-import com.stm.megogo.utils.MultithreadingUtils;
 
-import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 
@@ -31,20 +31,21 @@ public class CatalogProducerImpl implements CatologProducer {
 
     @Override
     public void produceCatalog() {
-        parsingCatalog(Constants.FILMS_URL);
+        parsingCatalog(String.format(Constants.FILMS_URL, Constants.FIRST_PAGE));
     }
 
     /**
      * По сути однопоточный
+     *
      * @param catalogUrl
      * @return
      */
     private CompletableFuture<Void> parsingCatalog(String catalogUrl) {
-        if(StringUtils.isEmpty(catalogUrl)) {
+        if (StringUtils.isEmpty(catalogUrl)) {
             log.info("Catalog collected!");
             return null;
         }
-        return pageService.getPage(catalogUrl, "Megogo Catalog page")
+        return pageService.getPage(catalogUrl, "Kinopoisk Catalog page")
                 .thenApplyAsync(
                         this::parseCatalogPageAndGetNextPageUrl,
                         threadPoolTaskExecutorForCatalog)
@@ -60,9 +61,7 @@ public class CatalogProducerImpl implements CatologProducer {
             return null;
         }
         log.info("Parse catalog document: {}", document.location());
-        return document.getElementsByTag("section").stream()
-                .map(section -> section.getElementsByClass("type-catalog"))
-                .flatMap(Collection::stream)
+        return document.getElementsByClass("selection-list").stream()
                 .findFirst()
                 .map(mainElement -> {
                     putFilmUrlToQueue(mainElement);
@@ -72,21 +71,27 @@ public class CatalogProducerImpl implements CatologProducer {
     }
 
     private void putFilmUrlToQueue(Element mainElement) {
-        mainElement.getElementsByClass("videoItem").stream()
-                .map(videoItem -> videoItem.getElementsByClass("overlay"))
-                .map(overlay -> overlay.attr("href"))
+        mainElement.getElementsByClass("selection-film-item-meta__link").stream()
+                .map(item -> Constants.BASE_URL + item.getElementsByTag("a").attr("href"))
                 .filter(StringUtils::isNotEmpty)
-                .map(url -> Constants.BASE_URL + url)
-                .forEach(url -> MultithreadingUtils.putObjectInQueue(url, filmItemUrlQueue));
+                .forEach(link -> MultithreadingUtils.putObjectInQueue(link, filmItemUrlQueue));
     }
 
     private String receiveNextPageUrl(Document document) {
-        return document.getElementsByClass("pagination").stream()
-                .map(pagination -> pagination.getElementsByTag("a"))
-                .map(linkElement -> linkElement.attr("href"))
+        Integer currentPage = document.getElementsByClass("paginator__page-number paginator__page-number_is-active").stream()
+                .map(Element::text)
+                .map(Integer::valueOf)
                 .findFirst()
-                .map(urlNextPage -> Constants.BASE_URL + urlNextPage)
                 .orElse(null);
+        Integer lastPage = document.getElementsByClass("paginator__page-number").stream()
+                .map(Element::text)
+                .map(Integer::valueOf)
+                .max(Integer::compareTo)
+                .orElse(null);
+        if (Objects.nonNull(currentPage) && Objects.nonNull(lastPage) && currentPage < lastPage) {
+            return String.format(Constants.FILMS_URL, ++currentPage);
+        }
+        return null;
     }
 
 }

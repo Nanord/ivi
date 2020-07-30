@@ -5,6 +5,7 @@ import com.stm.megogo.parser.ParserService;
 import com.stm.megogo.pojo.Film;
 import com.stm.megogo.service.SaveFile;
 import com.stm.megogo.utils.Constants;
+import com.stm.megogo.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import com.stm.megogo.utils.DateUtils;
 
 import javax.annotation.PostConstruct;
 import javax.naming.ConfigurationException;
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -71,6 +72,10 @@ public class CsvSaveFile implements SaveFile {
 
     @Override
     public void save(Film film) {
+        if (Objects.isNull(film)) {
+            log.warn("Film is null during save");
+            return;
+        }
         log.info("Save film: {}", film.getUrl());
         try {
             writeDataToFile(mapFilmToCSV(film), outputPath);

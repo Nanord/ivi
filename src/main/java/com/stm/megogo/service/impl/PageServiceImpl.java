@@ -2,6 +2,8 @@ package com.stm.megogo.service.impl;
 
 import com.stm.megogo.capcharesolver.CaptchaResolver;
 import com.stm.megogo.retrying.RetryStrategy;
+import com.stm.megogo.service.PageService;
+import com.stm.megogo.utils.MultithreadingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
@@ -13,8 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import com.stm.megogo.service.PageService;
-import com.stm.megogo.utils.MultithreadingUtils;
 
 import java.io.IOException;
 import java.net.SocketTimeoutException;

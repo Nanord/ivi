@@ -1,8 +1,12 @@
 package com.stm.megogo.parser.impl;
 
 import com.stm.megogo.parser.CatologProducer;
+import com.stm.megogo.parser.KinopoiskParserService;
 import com.stm.megogo.parser.ParserService;
+import com.stm.megogo.service.PageService;
+import com.stm.megogo.service.SaveFile;
 import com.stm.megogo.utils.Constants;
+import com.stm.megogo.utils.MultithreadingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,10 +14,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import com.stm.megogo.parser.KinopoiskParserService;
-import com.stm.megogo.service.PageService;
-import com.stm.megogo.service.SaveFile;
-import com.stm.megogo.utils.MultithreadingUtils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +57,7 @@ public class MultithreadingParserServiceImpl implements ParserService {
         List<CompletableFuture<Void>> result = new LinkedList<>();
         String url = MultithreadingUtils.takeObjectFromQueue(filmItemUrlQueue, Constants.DEFAULT_VALUE);
         while (!StringUtils.equals(url, Constants.DEFAULT_VALUE)) {
-            result.add(doWork(url));
+            result.add(doWork(url + "old"));
             url = takeNextTask();
         }
         return result;

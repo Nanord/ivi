@@ -1,8 +1,9 @@
 package com.stm.megogo.utils;
 
 public class Constants {
-    public static final String BASE_URL = "https://megogo.ru/";
-    public static final String FILMS_URL = BASE_URL + "ru/films";
+    public static final String BASE_URL = "https://www.kinopoisk.ru";
+    public static final String FILMS_URL = BASE_URL + "/lists/navigator/?quick_filters=films&tab=all&page=%s";
+    public static final String FIRST_PAGE = "1";
 
     public static final String DEFAULT_VALUE = "default";
 
