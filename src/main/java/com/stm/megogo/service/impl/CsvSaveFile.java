@@ -116,6 +116,7 @@ public class CsvSaveFile implements SaveFile {
         stringBuilder.append("Награды;");
         stringBuilder.append("Дата релиза в России;");
         stringBuilder.append("Дата цифрового релиза;");
+        stringBuilder.append("Стоимость подписки;");
         stringBuilder.append("Стоимость покупки с подпиской;");
         stringBuilder.append("Стоимость покупки без подписки;");
         stringBuilder.append("Стоимость аренды с подпиской;");
@@ -167,6 +168,8 @@ public class CsvSaveFile implements SaveFile {
                     stringBuilder.append(film.getReleaseDataInDigital());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
                     stringBuilder.append(film.getBuySubscription());
+                    stringBuilder.append(Constants.CELL_SEPARATOR);
+                    stringBuilder.append(film.getBuyWithSubscription());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
                     stringBuilder.append(film.getBuy());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
