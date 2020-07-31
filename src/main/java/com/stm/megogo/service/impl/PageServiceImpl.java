@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
@@ -43,24 +44,36 @@ public class PageServiceImpl implements PageService {
     @Autowired
     private CaptchaResolver captchaResolver;
 
+    @PostConstruct
+    private void login() {
+        driver.get(Constants.YANDEX_LOGIN_PAGE);
+        driver.findElementById("passp-field-login").sendKeys(yandexLogin);
+        findButton("Войти")
+                .ifPresent(WebElement::click);
+        driver.findElementById("passp-field-passwd").sendKeys(yandexPassword);
+        findButton("Войти")
+                .ifPresent(WebElement::click);
+        findButton("Не сейчас")
+                .ifPresent(WebElement::click);
+    }
+
+    private Optional<WebElement> findButton(String buttonText) {
+        return driver.findElementsByTagName("button").stream()
+                .filter(button -> StringUtils.containsIgnoreCase(button.getText(), buttonText))
+                .findFirst();
+    }
+
     @Override
     public CompletableFuture<Document> getPage(String url, String logText) {
-        ThreadPoolTaskExecutor executor = threadPoolTaskExecutorForGetPageMegogo;
-        Integer timeOutBeforeGetPage = timeOutBeforeGetPageMegogo;
-        if(StringUtils.contains(url, "kinopoisk")) {
-            executor = threadPoolTaskExecutorForGetPageKinopoisk;
-            timeOutBeforeGetPage = timeOutBeforeGetPageKinopoisk;
-        }
-        Integer finalTimeOutBeforeGetPage = timeOutBeforeGetPage;
         return CompletableFuture
                 .supplyAsync(
                         () -> {
                             if(StringUtils.contains(url, "kinopoisk")) {
-                                return connectSelenium(url, logText, finalTimeOutBeforeGetPage);
+                                return connectSelenium(url, logText, timeOutBeforeGetPageKinopoisk);
                             }
-                            return connectJsoup(url, logText, finalTimeOutBeforeGetPage);
+                            return connectJsoup(url, logText, timeOutBeforeGetPageKinopoisk);
                         },
-                        executor)
+                        threadPoolTaskExecutorForGetPageKinopoisk)
                 .exceptionally(ex -> MultithreadingUtils.handleException("Cannot get page", url, null, ex));
     }
 
@@ -112,5 +125,42 @@ public class PageServiceImpl implements PageService {
         }
         return document;
     }
+
+    @Override
+    public BuyInfo receiveBuyInfo(String url) {
+        driver.get(url);
+        findButton("купить и смотреть")
+                .ifPresent(WebElement::click);
+        findButton("купить и смотреть")
+                .ifPresent(WebElement::click);
+        Document document = Optional.ofNullable(driver.getPageSource())
+                .map(Jsoup::parse)
+                .orElse(null);
+        if(document == null) {
+            return null;
+        }
+        return document.getElementsByTag("div").stream()
+                .filter(div -> StringUtils.containsIgnoreCase(div.attr("class"), "PurchaseOptionCard__header_film"))
+                .map(header -> {
+                    BuyInfo buyInfo = new BuyInfo();
+                    String type = header.getElementsByTag("h2").text();
+                    List<Element> collect = new ArrayList<>(header.getElementsByAttributeValueContaining("class", "PurchaseOptionCard__price"));
+                    if(collect.size() != 2) {
+                        return null;
+                    }
+                    if(StringUtils.containsIgnoreCase(type, "покупка")) {
+                        buyInfo.setBuyWithSubscription(collect.get(0).text());
+                        buyInfo.setBuy(collect.get(1).text());
+                    }
+                    if(StringUtils.containsIgnoreCase(type, "аренда")) {
+                        buyInfo.setRentWithSubscription(collect.get(0).text());
+                        buyInfo.setRent(collect.get(1).text());
+                    }
+                    return buyInfo;
+                })
+                .findFirst()
+                .orElse(null);
+    }
+
 
 }

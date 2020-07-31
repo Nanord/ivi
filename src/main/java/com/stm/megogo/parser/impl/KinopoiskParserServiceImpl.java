@@ -1,5 +1,8 @@
 package com.stm.megogo.parser.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stm.megogo.pojo.Film;
 import com.stm.megogo.service.PageService;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +17,10 @@ import com.stm.megogo.parser.KinopoiskParserService;
 import com.stm.megogo.utils.MultithreadingUtils;
 import com.stm.megogo.utils.RegExpHelper;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,12 +33,15 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
     @Autowired
     private PageService pageService;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public Film parse(Document document) {
         if (document == null) {
             return null;
         }
         Film film = new Film();
+        //receivePayData(document.baseUri().replace("/old", ""), film);
         String nameRus = document.getElementsByClass("moviename-title-wrapper").text();
         String nameOrigin = document.getElementsByClass("alternativeHeadline").text();
         String ratingKP = document.getElementsByClass("rating_ball").text();
@@ -51,9 +59,34 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .setRatingKinopoisk(ratingKP)
                 .setActorList(actorList)
                 .setStudioList(studioList)
-                .setAwardList(awardList);
+                .setAwardList(awardList)
+                .setUrl(document.baseUri().replace("/old", ""));
         log.info("Parse Kinopoisk {}", film.getKinopoiskUrl());
         return res;
+    }
+
+    private void receivePayData(String url, Film film) {
+        Document page = MultithreadingUtils
+                .getObjectFromAsynkTask(pageService.getPage(url, "Kinopoisk pay page"));
+        Optional.ofNullable(page)
+                .map(document -> document.getElementById("__NEXT_DATA__"))
+                .map(Element::html)
+                .flatMap(j -> castStingToObject(j, new TypeReference<JsonNode>() {}))
+                .map(json -> json.get("props"))
+                .map(props -> props.get("initialState"))
+                .map(initialState -> initialState.get("entities"))
+                .map(entities -> entities.get("movieOnlineViewOption"))
+                .map(movieOnlineViewOption -> {
+                    Iterator<String> stringIterator = movieOnlineViewOption.fieldNames();
+                    if(stringIterator.hasNext()) {
+                        return movieOnlineViewOption.get(stringIterator.next());
+                    }
+                    return null;
+                })
+                .ifPresent(filmJson -> {
+                });
+
+        log.info("");
     }
 
     private void receiveDataFromTable(Document document, Film film) {
@@ -206,6 +239,15 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .findFirst()
                 .flatMap(text -> RegExpHelper.findMatcherString(":\\s*(\\d+\\.\\d+)", text, 1))
                 .orElse(null);
+    }
+
+    private <T> Optional<T> castStingToObject(String str, TypeReference<T> typeReference) {
+        try {
+            return Optional.ofNullable(objectMapper.readValue(str, typeReference));
+        } catch (IOException e) {
+            log.warn("Cannot read Value from " + str + " how type " + typeReference.getType().getTypeName());
+            return Optional.empty();
+        }
     }
 
 }
