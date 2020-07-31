@@ -8,7 +8,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class CatalogInfo {
     String filmUrl;
-    Boolean isAvailable;
-    Boolean isSubscription;
+    Boolean isAvailable = false;
+    Boolean isSubscription = false;
     BuyInfo buyInfo;
 }

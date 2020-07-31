@@ -57,8 +57,7 @@ public class ParserServiceImpl implements ParserService {
                 .findFirst()
                 .map(mainElement -> {
                     parseCatalog(mainElement);
-                    //return receiveNextPageUrl(document);
-                    return "";
+                    return receiveNextPageUrl(document);
                 })
                 .orElse(null);
     }
@@ -112,13 +111,35 @@ public class ParserServiceImpl implements ParserService {
                 .map(document -> kinopoiskParserService.parse(document))
                 .map(film -> {
                     BuyInfo buyInfo = catalogInfo.getBuyInfo();
-                    if(buyInfo == null) {
+                    if(!catalogInfo.getIsSubscription() && catalogInfo.getBuyInfo() == null) {
+                        film.setBuySubscription("-");
+                        film.setBuy("-");
+                        film.setRent("-");
+                        film.setBuyWithSubscription("-");
+                        film.setRentWithSubscription("-");
+                    }
+                    if(buyInfo == null && catalogInfo.getIsSubscription()) {
+                        film.setBuySubscription("269 ₽");
+                        film.setBuy("0");
+                        film.setRent("0");
+                        film.setBuyWithSubscription("0");
+                        film.setRentWithSubscription("0");
                         return film;
                     }
+                    if(buyInfo == null) {
+                        film.setBuySubscription("-");
+                        film.setBuy("-");
+                        film.setRent("-");
+                        film.setBuyWithSubscription("-");
+                        film.setRentWithSubscription("-");
+                        return film;
+                    }
+                    film.setBuySubscription("269 ₽");
                     film.setBuy(buyInfo.getBuy());
                     film.setRent(buyInfo.getRent());
                     film.setBuyWithSubscription(buyInfo.getBuyWithSubscription());
                     film.setRentWithSubscription(buyInfo.getRentWithSubscription());
+                    return film;
                 })
                 .ifPresent(film -> saveFile.save(film));
     }

@@ -62,32 +62,8 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .setStudioList(studioList)
                 .setAwardList(awardList)
                 .setUrl(document.baseUri().replace("/old", ""));
-        log.info("Parse Kinopoisk {}", film.getKinopoiskUrl());
+        log.info("Parse Kinopoisk {}", film.getUrl());
         return res;
-    }
-
-    private void receivePayData(String url, Film film) {
-        Document page = MultithreadingUtils
-                .getObjectFromAsynkTask(pageService.getPage(url, "Kinopoisk pay page"));
-        Optional.ofNullable(page)
-                .map(document -> document.getElementById("__NEXT_DATA__"))
-                .map(Element::html)
-                .flatMap(j -> castStingToObject(j, new TypeReference<JsonNode>() {}))
-                .map(json -> json.get("props"))
-                .map(props -> props.get("initialState"))
-                .map(initialState -> initialState.get("entities"))
-                .map(entities -> entities.get("movieOnlineViewOption"))
-                .map(movieOnlineViewOption -> {
-                    Iterator<String> stringIterator = movieOnlineViewOption.fieldNames();
-                    if(stringIterator.hasNext()) {
-                        return movieOnlineViewOption.get(stringIterator.next());
-                    }
-                    return null;
-                })
-                .ifPresent(filmJson -> {
-                });
-
-        log.info("");
     }
 
     private void receiveDataFromTable(Document document, Film film) {

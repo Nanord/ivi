@@ -175,7 +175,7 @@ public class CsvSaveFile implements SaveFile {
                     stringBuilder.append(Constants.CELL_SEPARATOR);
                     stringBuilder.append(film.getRentWithSubscription());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getRentWithSubscription());
+                    stringBuilder.append(film.getRent());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
                     stringBuilder.append(film.getUrl());
                     stringBuilder.append(Constants.CELL_SEPARATOR);
