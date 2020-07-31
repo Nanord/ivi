@@ -41,7 +41,7 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
             return null;
         }
         Film film = new Film();
-        //receivePayData(document.baseUri().replace("/old", ""), film);
+        String id = receiveId(document.baseUri());
         String nameRus = document.getElementsByClass("moviename-title-wrapper").text();
         String nameOrigin = document.getElementsByClass("alternativeHeadline").text();
         String ratingKP = document.getElementsByClass("rating_ball").text();
@@ -53,6 +53,7 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 document.baseUri().replace("/old", "/awards"));
         receiveDataFromTable(document, film);
         Film res = film
+                .setId(id)
                 .setNameRus(nameRus)
                 .setNameOrigin(nameOrigin)
                 .setRatingIMDB(ratingIMDb)
@@ -238,6 +239,14 @@ public class KinopoiskParserServiceImpl implements KinopoiskParserService {
                 .map(Element::text)
                 .findFirst()
                 .flatMap(text -> RegExpHelper.findMatcherString(":\\s*(\\d+\\.\\d+)", text, 1))
+                .orElse(null);
+    }
+
+    private String receiveId(String url) {
+        return Arrays.stream(url.split("/"))
+                .filter(Objects::nonNull)
+                .filter(text -> text.matches("\\d+"))
+                .findFirst()
                 .orElse(null);
     }
 

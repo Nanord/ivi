@@ -1,5 +1,6 @@
 package com.stm.megogo.configuration;
 
+import com.stm.megogo.pojo.CatalogInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -60,7 +61,7 @@ public class ExecutorConfiguration {
     }
 
     @Bean
-    public BlockingQueue<String> filmItemUrlQueue() {
+    public BlockingQueue<CatalogInfo> filmItemUrlQueue() {
         return new LinkedBlockingDeque<>(bufferCatalog);
     }
 }

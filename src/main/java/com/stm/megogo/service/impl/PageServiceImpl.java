@@ -1,14 +1,18 @@
 package com.stm.megogo.service.impl;
 
 import com.stm.megogo.capcharesolver.CaptchaResolver;
+import com.stm.megogo.pojo.BuyInfo;
 import com.stm.megogo.retrying.RetryStrategy;
 import com.stm.megogo.service.PageService;
+import com.stm.megogo.utils.Constants;
 import com.stm.megogo.utils.MultithreadingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,9 +23,13 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -32,6 +40,12 @@ public class PageServiceImpl implements PageService {
 
     @Value("${timeout.before.get.page.kinopoisk}")
     private Integer timeOutBeforeGetPageKinopoisk;
+
+    @Value("${yandex.login}")
+    private String yandexLogin;
+
+    @Value("${yandex.password}")
+    private String yandexPassword;
 
     @Autowired
     @Qualifier("threadPoolTaskExecutorForGetPageMegogo")
@@ -58,9 +72,12 @@ public class PageServiceImpl implements PageService {
     }
 
     private Optional<WebElement> findButton(String buttonText) {
-        return driver.findElementsByTagName("button").stream()
-                .filter(button -> StringUtils.containsIgnoreCase(button.getText(), buttonText))
-                .findFirst();
+        return RetryStrategy.<Optional<WebElement>>newRetryStrategy(10)
+                .retryIfException(Exception.class)
+                .setFunction(() ->  driver.findElementsByTagName("button").stream()
+                        .filter(button -> StringUtils.containsIgnoreCase(button.getText(), buttonText))
+                        .findFirst())
+                .run();
     }
 
     @Override
@@ -128,38 +145,65 @@ public class PageServiceImpl implements PageService {
 
     @Override
     public BuyInfo receiveBuyInfo(String url) {
-        driver.get(url);
-        findButton("купить и смотреть")
-                .ifPresent(WebElement::click);
-        findButton("купить и смотреть")
-                .ifPresent(WebElement::click);
-        Document document = Optional.ofNullable(driver.getPageSource())
-                .map(Jsoup::parse)
-                .orElse(null);
-        if(document == null) {
-            return null;
+        try {
+            MultithreadingUtils.sleep(timeOutBeforeGetPageKinopoisk);
+            driver.get(url);
+            Optional<WebElement> buyAndWatch = findButton("купить и смотреть");
+            while (!buyAndWatch.isPresent()) {
+                buyAndWatch = findButton("купить и смотреть");
+            }
+            buyAndWatch.ifPresent(WebElement::click);
+            MultithreadingUtils.sleep(1000);
+            driver.findElementsByClassName("passp-previous-step-button").stream()
+                    .findFirst()
+                    .ifPresent(WebElement::click);
+            Document document = Optional.ofNullable(driver.getPageSource())
+                    .map(Jsoup::parse)
+                    .orElse(null);
+            if(document == null) {
+                return null;
+            }
+            Optional<Element> optHeaders = document.getElementsByTag("div").stream()
+                    .filter(div -> StringUtils.containsIgnoreCase(div.attr("class"), "PurchaseOptionCard__header_film"))
+                    .findFirst();
+            while (!optHeaders.isPresent()) {
+                document = Optional.ofNullable(driver.getPageSource())
+                        .map(Jsoup::parse)
+                        .orElse(null);
+                if(document == null) {
+                    return null;
+                }
+                optHeaders = document.getElementsByTag("div").stream()
+                        .filter(div -> StringUtils.containsIgnoreCase(div.attr("class"), "PurchaseOptionCard__header_film"))
+                        .findFirst();
+            }
+            BuyInfo buyInfo = new BuyInfo();
+            document.getElementsByTag("div").stream()
+                    .filter(div -> StringUtils.containsIgnoreCase(div.attr("class"), "PurchaseOptionCard__header_film"))
+                    .forEach(header -> {
+                        String type = header.getElementsByTag("h2").text();
+                        List<Element> collect = header.getElementsByAttributeValueContaining("class", "PurchaseOptionCard__price").stream()
+                                .map(price -> price.getElementsByTag("span"))
+                                .flatMap(Collection::stream)
+                                .skip(1)
+                                .collect(Collectors.toList());
+                        if(collect.size() != 2) {
+                            return;
+                        }
+                        if(StringUtils.containsIgnoreCase(type, "покупка")) {
+                            buyInfo.setBuyWithSubscription(collect.get(0).text());
+                            buyInfo.setBuy(collect.get(1).text());
+                        }
+                        if(StringUtils.containsIgnoreCase(type, "аренда")) {
+                            buyInfo.setRentWithSubscription(collect.get(0).text());
+                            buyInfo.setRent(collect.get(1).text());
+                        }
+                    });
+            return buyInfo;
+        } catch (Exception e) {
+            log.info("cannot get buy info! {}", url);
         }
-        return document.getElementsByTag("div").stream()
-                .filter(div -> StringUtils.containsIgnoreCase(div.attr("class"), "PurchaseOptionCard__header_film"))
-                .map(header -> {
-                    BuyInfo buyInfo = new BuyInfo();
-                    String type = header.getElementsByTag("h2").text();
-                    List<Element> collect = new ArrayList<>(header.getElementsByAttributeValueContaining("class", "PurchaseOptionCard__price"));
-                    if(collect.size() != 2) {
-                        return null;
-                    }
-                    if(StringUtils.containsIgnoreCase(type, "покупка")) {
-                        buyInfo.setBuyWithSubscription(collect.get(0).text());
-                        buyInfo.setBuy(collect.get(1).text());
-                    }
-                    if(StringUtils.containsIgnoreCase(type, "аренда")) {
-                        buyInfo.setRentWithSubscription(collect.get(0).text());
-                        buyInfo.setRent(collect.get(1).text());
-                    }
-                    return buyInfo;
-                })
-                .findFirst()
-                .orElse(null);
+        return null;
     }
 
 

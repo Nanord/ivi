@@ -15,6 +15,7 @@ import java.util.List;
 public class Film {
     private String id;
     private String nameRus;
+    private String category = "Фильмы";
     private String nameOrigin;
     private String year;
     private List<String> studioList = new ArrayList<>();
@@ -30,9 +31,10 @@ public class Film {
     private String releaseDateInWorld;
     private String releaseDateInRussia;
     private String releaseDataInDigital;
-    private String provisionFor;
-    private String purchasePrice;
-    private Boolean subscriptionAvailability = false;
+    String rent;
+    String buy;
+    String rentWithSubscription;
+    String buyWithSubscription;
+    String buySubscription;
     private String url;
-    private String kinopoiskUrl;
 }

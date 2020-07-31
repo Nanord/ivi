@@ -34,7 +34,7 @@ public class FirefoxWebDriver extends WebDriverWrapper {
         FirefoxDriver driver = null;
         try {
             FirefoxOptions options = new FirefoxOptions();
-            options.setHeadless(true);
+            options.setHeadless(false);
             options.setAcceptInsecureCerts(true);
 
             driver = new FirefoxDriver(options);
