@@ -40,9 +40,6 @@ public class CsvSaveFile implements SaveFile {
 
     @Autowired
     private ParserService parserService;
-    @Autowired
-    @Qualifier("threadPoolTaskExecutorForWriteFile")
-    private ThreadPoolTaskExecutor threadPoolTaskExecutorForWriteFile;
 
     private TypeReference<List<Film>> urlPropsTypeReference = new TypeReference<List<Film>>() {};
 
