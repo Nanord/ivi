@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stm.ivi.exception.RetryException;
 import com.stm.ivi.retrying.RetryCount;
+import com.stm.ivi.utils.Constants;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -148,6 +149,21 @@ public class JsoupApiHelper {
                     .map(entry -> "\t\t" + entry.getKey() + ": " + entry.getValue())
                     .collect(Collectors.joining(StringUtils.LF)))
                 .orElse(StringUtils.EMPTY);
+    }
+
+    public String getIviSession() {
+        try {
+            Connection.Response execute = Jsoup.connect(Constants.BASE_URL).execute();
+            return execute.headers().entrySet().stream()
+                    .filter(header -> StringUtils.containsIgnoreCase(header.getKey(), "set-cookie"))
+                    .map(Map.Entry::getValue)
+                    .map(line -> line.replace("sessivi=", StringUtils.EMPTY).replaceAll(";.+", StringUtils.EMPTY))
+                    .findFirst()
+                    .orElse(StringUtils.EMPTY);
+        } catch (IOException e) {
+            log.error("Cannot connect to URL: {}", Constants.BASE_URL, e);
+        }
+        return StringUtils.EMPTY;
     }
 
 }

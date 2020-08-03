@@ -1,10 +1,13 @@
 package com.stm.ivi.utils;
 
 public class Constants {
-    public static final String BASE_URL = "https://www.kinopoisk.ru";
-    public static final String FILMS_URL = BASE_URL + "/lists/navigator/?quick_filters=films&tab=all&page=%s";
-    public static final String FIRST_PAGE = "1";
-    public static final String YANDEX_LOGIN_PAGE = "https://passport.yandex.ru/auth";
+    public static final String BASE_URL = "https://www.ivi.ru";
+
+    // Айдишник категории фильмов = 14.
+    // https://api.ivi.ru/mobileapi/categories/v6?app_version=870
+    public static final String API_MOVIES_URL = "https://api.ivi.ru/mobileapi/catalogue/v5/?category=14&from=%s&to=9999999&withpreorderable=true&app_version=870&session=%s";
+    public static final String API_CATEGORIES_AND_GENRES_URL = "https://api.ivi.ru/mobileapi/categories/v6?app_version=870&session=%s";
+    public static final String API_COUNTRY_URL = "https://api.ivi.ru/mobileapi/countries/v6/?app_version=870&session=%s";
 
     public static final String DEFAULT_VALUE = "default";
 
