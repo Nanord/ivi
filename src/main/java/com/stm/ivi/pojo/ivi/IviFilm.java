@@ -42,6 +42,8 @@ public class IviFilm {
     private Integer year;
     @JsonProperty("share_link")
     private String shareLink;
+    @JsonProperty("content_paid_type")
+    private String typeContent;
     private List<String> artists = new ArrayList<>();
     private List<Long> genres = new ArrayList<>();
 }

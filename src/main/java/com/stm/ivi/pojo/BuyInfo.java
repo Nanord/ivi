@@ -8,8 +8,11 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @ToString
 public class BuyInfo {
-    String rent;
-    String buy;
-    String rentWithSubscription;
-    String buyWithSubscription;
+    String buySubscription = "-";
+    String buyHD = "-";
+    String buySD = "-";
+    String buyUHD = "-";
+    String rentHD = "-";
+    String rentSD = "-";
+    String rendUHD = "-";
 }

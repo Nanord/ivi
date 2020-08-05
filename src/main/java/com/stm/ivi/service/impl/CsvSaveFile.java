@@ -7,6 +7,7 @@ import com.stm.ivi.service.SaveFile;
 import com.stm.ivi.utils.Constants;
 import com.stm.ivi.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -22,8 +23,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,7 +36,14 @@ import java.util.Objects;
 public class CsvSaveFile implements SaveFile {
 
     private static final String OUT_FOLDER = "parsed";
-    private static final String FILE_NAME = "megogo.csv";
+    private static final String FILE_NAME = "ivi.csv";
+    private static final Map<String, String> MAP_REPLACE_EXCESS_WORD_FOR_REPORTS = new HashMap<String, String>() {{
+        put("₽", "р.");
+        put(";", "");
+        put("\n", " ");
+        put("É", "E");
+        put("ô", "o");
+    }};
 
     @Value("${output.path}")
     private String outputPathProperty;
@@ -101,7 +113,6 @@ public class CsvSaveFile implements SaveFile {
         stringBuilder.append("Название на русском;");
         stringBuilder.append("Название на языке оригинала;");
         stringBuilder.append("Год;");
-        stringBuilder.append("Студия;");
         stringBuilder.append("Страна;");
         stringBuilder.append("Жанр;");
         stringBuilder.append("Рейтинг на Кинопоиске;");
@@ -110,85 +121,94 @@ public class CsvSaveFile implements SaveFile {
         stringBuilder.append("Сборы фильма в России;");
         stringBuilder.append("Режиссер;");
         stringBuilder.append("Актер;");
-        stringBuilder.append("Награды;");
-        stringBuilder.append("Дата релиза в России;");
-        stringBuilder.append("Дата цифрового релиза;");
+        stringBuilder.append("Дата релиза;");
         stringBuilder.append("Стоимость подписки;");
-        stringBuilder.append("Стоимость покупки с подпиской;");
-        stringBuilder.append("Стоимость покупки без подписки;");
-        stringBuilder.append("Стоимость аренды с подпиской;");
-        stringBuilder.append("Стоимость аренды без подписки;");
+        stringBuilder.append("Стоимость покупки SD;");
+        stringBuilder.append("Стоимость покупки HD;");
+        stringBuilder.append("Стоимость покупки UHD;");
+        stringBuilder.append("Стоимость аренды SD;");
+        stringBuilder.append("Стоимость аренды HD;");
+        stringBuilder.append("Стоимость аренды UHD;");
         stringBuilder.append("URL;");
         stringBuilder.append(Constants.LINE_SEPARATOR);
         return stringBuilder.toString();
     }
 
     public String mapFilmToCSV(Film film) {
-        setEmptyElementIfCollectionEmpty(film.getStudioList());
-        setEmptyElementIfCollectionEmpty(film.getActorList());
-        setEmptyElementIfCollectionEmpty(film.getGenreList());
+
 
         StringBuilder stringBuilder = new StringBuilder();
-        for (String studio : film.getStudioList()) {
-            for (String actor : film.getActorList()) {
-                for (String genre : film.getGenreList()) {
-                    stringBuilder.append(film.getId());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getNameRus());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getNameOrigin());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getYear());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(studio);
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getCountry());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(genre);
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getRatingKinopoisk());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getRatingIMDB());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getFeesInWorld());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getFeesInRussia());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getDirector());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(actor);
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(String.join(" | ", film.getAwardList()));
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getReleaseDateInRussia());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getReleaseDataInDigital());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getBuySubscription());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getBuyWithSubscription());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getBuy());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getRentWithSubscription());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getRent());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(film.getUrl());
-                    stringBuilder.append(Constants.CELL_SEPARATOR);
-                    stringBuilder.append(Constants.LINE_SEPARATOR);
-                }
-            }
-        }
+
+        stringBuilder.append(getStringFromValue(film.getId()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getNameRus()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getNameOrigin()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getYear()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getCountry()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromCollection(film.getGenreList()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getRatingKinopoisk()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getRatingIMDB()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getFeesInWorld()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getFeesInRussia()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getDirector()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromCollection(film.getActorList()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getReleaseDateInWorld()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getBuySubscription());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getBuySD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getBuyHD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getBuyUHD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getRentSD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getRentHD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(film.getBuyInfo().getRendUHD());
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(getStringFromValue(film.getUrl()));
+        stringBuilder.append(Constants.CELL_SEPARATOR);
+        stringBuilder.append(Constants.LINE_SEPARATOR);
+
         return stringBuilder.toString();
     }
 
-    private void setEmptyElementIfCollectionEmpty(List<String> collection) {
-        if(collection == null) {
-            collection = new ArrayList<>();
+    private String getStringFromValue(String str) {
+        if(StringUtils.isEmpty(str)) {
+            return "-";
         }
-        if(collection.isEmpty()) {
-            collection.add(StringUtils.EMPTY);
+        return validateValue(str);
+    }
+
+    public String validateValue(String value) {
+        return Optional.ofNullable(value)
+                .filter(StringUtils::isNotEmpty)
+                .map(str -> {
+                    for(Map.Entry<String, String> entry: MAP_REPLACE_EXCESS_WORD_FOR_REPORTS.entrySet()) {
+                        str = str.replaceAll(entry.getKey(), entry.getValue());
+                    }
+                    return str;
+                })
+                .orElse(StringUtils.EMPTY);
+    }
+
+    private String getStringFromCollection(List<String> collection) {
+        if(CollectionUtils.isEmpty(collection)) {
+            return "-";
         }
+        return String.join(", ", collection);
     }
 }

@@ -18,11 +18,11 @@ public class Film {
     private String category = "Фильмы";
     private String nameOrigin;
     private String year;
-    private List<String> studioList = new ArrayList<>();
     private String country;
     private List<String> genreList = new ArrayList<>();
     private String ratingKinopoisk;
     private String ratingIMDB;
+    private String ratingIvi;
     private String feesInWorld;
     private String feesInRussia;
     private String director;
@@ -31,10 +31,6 @@ public class Film {
     private String releaseDateInWorld;
     private String releaseDateInRussia;
     private String releaseDataInDigital;
-    String rent;
-    String buy;
-    String rentWithSubscription;
-    String buyWithSubscription;
-    String buySubscription;
+    private BuyInfo buyInfo;
     private String url;
 }

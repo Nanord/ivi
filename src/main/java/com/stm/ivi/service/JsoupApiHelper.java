@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,8 +26,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JsoupApiHelper {
 
-    private static final String BODY = "body";
+    private String session;
     private static final String LOG_IF_FAIL = "\n\tUrl:\n\t\t%s\n\tBODY:\n%s\n\tHEADER:\n%s\n\tCOOKIE:\n%s";
+    private static final String REGEX_VALID_URL = "^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -151,10 +153,41 @@ public class JsoupApiHelper {
                 .orElse(StringUtils.EMPTY);
     }
 
-    public String getIviSession() {
+    public Optional<Document> getWebPageLong(String url)  {
+        return getWebPageLongWithParameters(url, 3, 1000, 0, 100000);
+    }
+
+    public Optional<Document> getWebPageLongWithParameters(String url, Integer countOfRetry, Integer timeAfterFailCallFunction, Integer timeOutBeforeCallFunction, Integer jsoupTimeout)  {
+        if(!isValidURl(url)) {
+            log.warn("Url is not valid: " + url);
+            return Optional.empty();
+        }
+        try {
+            Document document =  new RetryCount(countOfRetry).<Document>createStrategy()
+                    .setTimeOutAfterFailCallFunction(timeAfterFailCallFunction)
+                    .setTimeOutBeforeCallFunction(timeOutBeforeCallFunction)
+                    .retryIfException(IOException.class)
+                    .setFunction(() -> Jsoup.connect(url)
+                            .timeout(jsoupTimeout)
+                            .maxBodySize(0)
+                            .get())
+                    .run();
+            return Optional.ofNullable(document);
+        } catch (RetryException e) {
+            log.error("Cannot get page by url \"" + url + "\"");
+        }
+        return Optional.empty();
+    }
+
+    public boolean isValidURl(String url) {
+        return StringUtils.isNotEmpty(url)
+                && url.matches(REGEX_VALID_URL);
+    }
+
+    public void refreshSession() {
         try {
             Connection.Response execute = Jsoup.connect(Constants.BASE_URL).execute();
-            return execute.headers().entrySet().stream()
+            this.session = execute.headers().entrySet().stream()
                     .filter(header -> StringUtils.containsIgnoreCase(header.getKey(), "set-cookie"))
                     .map(Map.Entry::getValue)
                     .map(line -> line.replace("sessivi=", StringUtils.EMPTY).replaceAll(";.+", StringUtils.EMPTY))
@@ -163,7 +196,14 @@ public class JsoupApiHelper {
         } catch (IOException e) {
             log.error("Cannot connect to URL: {}", Constants.BASE_URL, e);
         }
-        return StringUtils.EMPTY;
+    }
+
+    public String getIviSession() {
+        if(StringUtils.isNotEmpty(session)) {
+            return session;
+        }
+        refreshSession();
+        return session;
     }
 
 }
